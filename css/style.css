@@ -345,31 +345,70 @@ dialog.modal::backdrop {
 }
 
 /* =========================================
-   6. 프렛보드 게임 (Fretboard Game)
+   6. 프렛보드 게임 (Fretboard Game) 수정
    ========================================= */
-.mode-selector { text-align: center; }
+
+/* 모드 선택 전체 영역 */
+.mode-selector {
+    text-align: center;
+    padding-top: 20px;
+}
+
+/* "모드 선택" 제목 키우기 */
+.mode-selector h3 {
+    font-size: 2.5rem;   /* 제목 크기 대폭 증가 */
+    margin-bottom: 40px; /* 아래 카드와의 간격 넓힘 */
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* 카드 컨테이너 간격 조정 */
 .mode-cards {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 30px;          /* 카드 사이 간격 넓힘 (20px -> 30px) */
     margin-top: 30px;
+    flex-wrap: wrap;    /* 화면이 좁으면 줄바꿈 허용 */
 }
+
+/* 개별 카드(버튼) 스타일 대폭 확대 */
 .card {
     background: var(--panel-color);
-    padding: 20px;
-    border-radius: 15px;
-    width: 140px;
+    width: 240px;        /* 너비 증가 (140px -> 240px) */
+    padding: 50px 30px;  /* 내부 여백을 늘려 버튼 느낌 강화 */
+    border-radius: 20px; /* 둥근 모서리도 더 크게 */
     cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    border: 2px solid transparent;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+    border: 3px solid transparent; /* 테두리 두께 증가 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); /* 입체감 추가 */
 }
+
+/* 카드 호버 효과 */
 .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-10px); /* 더 많이 떠오르게 */
     background: #3d3d3d;
     border-color: var(--accent-color);
+    box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4); /* 호버 시 그림자 강조 */
 }
-.card h4 { margin: 10px 0; font-size: 1.2rem; color: var(--text-color); }
-.card p { font-size: 0.9rem; color: #aaa; }
+
+/* 카드 내부 제목 (이모지 포함) */
+.card h4 {
+    margin: 0 0 15px 0;
+    font-size: 2.2rem;   /* 폰트 크기 2배 가까이 확대 */
+    color: var(--text-color);
+}
+
+/* 카드 내부 설명 텍스트 */
+.card p {
+    font-size: 1.2rem;   /* 설명 글씨도 잘 보이게 확대 */
+    color: #aaa;
+    margin: 0;
+    font-weight: 500;
+}
 
 .game-header { margin-bottom: 30px; }
 

@@ -4,7 +4,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 // 마스터 게인 노드 생성 (전체 볼륨 조절용)
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
-masterGain.gain.value = 0.3; // [수정] 기본값 0.1 -> 0.3 (30% 수준으로 시작)
+masterGain.gain.value = 0.5;
 
 export const SoundManager = {
     // 볼륨 설정 메서드 (0.0 ~ 1.0)

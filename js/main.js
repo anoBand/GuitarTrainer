@@ -40,8 +40,7 @@ const volSlider = document.getElementById('volume-slider');
 volSlider.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value);
     SoundManager.setVolume(val);
-    // 피드백 사운드 (볼륨 조절 시 띵~ 소리 재생)
-    if(Math.random() > 0.8) SoundManager.playTone(440, 'sine', 0.1);
+    SoundManager.playTone(440, 'sine', 0.1);
 });
 
 // --- 2. ⚙️ 설정 모달 로직 (기어 아이콘) ---
