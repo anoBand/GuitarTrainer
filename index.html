@@ -5,26 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guitar Master Web</title>
     <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
-
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/tuner.css">
-    <link rel="stylesheet" href="css/fretboard.css">
 </head>
 <body>
 
-    <nav class="navbar">
-        <div class="logo">🎸 Guitar Master</div>
-        <div class="nav-buttons">
+    <nav class="navbar centered-nav">
+        <div class="nav-switch">
             <button id="nav-tuner" class="active">튜너</button>
-            <button id="nav-fretboard">프렛보드 트레이너</button>
+            <button id="nav-fretboard">프렛보드</button>
+        </div>
+        <div class="nav-controls">
+            <div class="volume-control" title="효과음 볼륨">
+                <span style="font-size:1.2rem">🔊</span>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.3">
+            </div>
+
+            <button id="btn-theme" class="icon-btn" title="테마 변경">🌗</button>
+
+            <button id="btn-settings" class="icon-btn" title="오디오 설정">⚙️</button>
         </div>
     </nav>
 
+    <dialog id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h2>설정</h2>
+            <div class="input-select-group">
+                <label for="modal-audio-source">입력 장치 선택:</label>
+                <select id="modal-audio-source"></select>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-save-settings">저장 & 닫기</button>
+                <button id="btn-close-settings" class="secondary-btn">취소</button>
+            </div>
+        </div>
+    </dialog>
+
     <div id="start-overlay">
         <div class="overlay-content">
-            <h1>Guitar Master Web</h1>
-            <p>튜너와 프렛보드 연습을 시작하려면 아래 버튼을 누르세요.</p>
-            <button id="btn-init">🎤 마이크 켜기 & 시작</button>
+            <h1>Guitar Master</h1>
+            <p>기타 연습을 시작합니다.</p>
+            <button id="btn-init">🎤 시작하기</button>
         </div>
     </div>
 
@@ -33,41 +53,47 @@
             <div class="tuner-display">
                 <div id="tuner-note">--</div>
                 <div id="tuner-freq">0.0 Hz</div>
-
                 <div class="gauge-wrapper">
                     <div class="center-line"></div>
-                    <div class="ticks">
-                        <span class="tick left">-50</span>
-                        <span class="tick center">0</span>
-                        <span class="tick right">+50</span>
-                    </div>
+                    <div class="ticks"><span>-50</span><span>0</span><span>+50</span></div>
                     <div id="tuner-needle" class="needle"></div>
                 </div>
-                <div id="tuner-status">줄을 튕겨보세요</div>
             </div>
         </section>
 
         <section id="fretboard-app" class="app-section hidden">
-            <div class="game-header">
-                <div class="timer-container">
-                    <div id="timer-bar" class="bar"></div>
+            <div id="game-mode-select" class="mode-selector">
+                <h3>모드 선택</h3>
+                <div class="mode-cards">
+                    <div class="card" data-mode="free"><h4>🌱 자유</h4><p>무제한</p></div>
+                    <div class="card" data-mode="timeAttack"><h4>⏱️ 실전</h4><p>100초 타임어택</p></div>
+                    <div class="card" data-mode="infinity"><h4>🔥 무한</h4><p>5초 컷</p></div>
                 </div>
-                <div class="score-board">SCORE: <span id="score">0</span></div>
             </div>
 
-            <div class="question-box">
-                <div class="instruction">다음 위치의 음을 연주하세요!</div>
-
-                <div class="target-display">
-                    <div id="target-note-display" class="big-note">?</div>
-                    <div id="target-string-hint" class="string-hint">-- 번 줄</div>
+            <div id="game-play-area" class="hidden">
+                <div class="game-header">
+                    <div class="timer-container">
+                        <div id="timer-bar" class="bar"></div>
+                        <span id="timer-text">--</span>
+                    </div>
+                    <div class="score-board">SCORE: <span id="score">0</span></div>
                 </div>
 
-                <div id="feedback-msg">준비되면 시작합니다</div>
-            </div>
+                <div class="question-box">
+                    <div class="target-display">
+                        <div id="target-note-display" class="big-note">?</div>
+                        <div id="target-string-hint" class="string-hint">-- 번 줄</div>
+                    </div>
+                    <div class="sustain-bar-bg"><div id="sustain-bar" class="sustain-bar"></div></div>
+                    <div id="feedback-msg">대기 중...</div>
+                </div>
 
-            <div class="controls">
-                <button id="btn-game-restart" class="secondary-btn">게임 재시작</button>
+                <div id="virtual-fretboard" class="virtual-fretboard"></div>
+
+                <div class="controls">
+                    <button id="btn-stop-game" class="secondary-btn">나가기</button>
+                </div>
             </div>
         </section>
     </div>
