@@ -177,7 +177,7 @@ export class FretboardGame {
 
     // --- 결과 처리 ---
     handleSuccess(source) {
-        this.score += 10;
+        this.score += 1;
         this.ui.score.innerText = this.score;
         this.ui.msg.innerText = `Nice! (${source})`;
         this.ui.msg.className = "success-anim";
@@ -189,7 +189,7 @@ export class FretboardGame {
         setTimeout(() => {
             this.isPlaying = true;
             this.nextQuestion();
-        }, 200);
+        }, 500);
     }
 
     handleFail() {

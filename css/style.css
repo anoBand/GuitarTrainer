@@ -247,9 +247,9 @@ dialog.modal::backdrop {
     display: flex;
     gap: 10px;
     width: 100%;
-    justify-content: space-between; /* 버튼 양옆 정렬 */
+    justify-content: space-between;
+    align-items: center; /* [추가] 수직 중앙 정렬을 강제합니다 */
 }
-
 .modal-actions button {
     flex: 1; /* 버튼 너비 균등 */
     height: 48px; /* 높이 통일 */
@@ -262,6 +262,7 @@ dialog.modal::backdrop {
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
+    margin: 0 !important;
 }
 
 #btn-save-settings {
