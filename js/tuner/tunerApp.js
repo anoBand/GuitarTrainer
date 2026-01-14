@@ -6,7 +6,7 @@ export class TunerApp {
         this.elNote = document.getElementById('tuner-note');
         this.elFreq = document.getElementById('tuner-freq');
         this.elNeedle = document.getElementById('tuner-needle');
-        this.elStatus = document.getElementById('tuner-status');
+        // this.elStatus = document.getElementById('tuner-status');
     }
 
     update(frequency) {
@@ -21,7 +21,7 @@ export class TunerApp {
         // 1. 텍스트 업데이트
         this.elNote.innerText = data.note;
         this.elFreq.innerText = `${data.frequency.toFixed(1)} Hz`;
-        this.elStatus.innerText = "";
+        // this.elStatus.innerText = "";
 
         // 2. 바늘 위치 계산
         // -50 cents = 0%, 0 cents = 50%, +50 cents = 100%
