@@ -28,12 +28,37 @@ btnInit.addEventListener('click', async () => {
     startLoop();
 });
 
+/* =========================================
+   테마 변경 로직 (Dark/Light Toggle)
+   ========================================= */
+
 const btnTheme = document.getElementById('btn-theme');
-btnTheme.addEventListener('click', () => {
-    document.body.classList.toggle('light-mode');
-    // 아이콘 변경 (선택사항)
-    btnTheme.innerText = document.body.classList.contains('light-mode') ? '🌑' : '🌗';
-});
+
+// 1. 페이지 로드 시 저장된 테마 불러오기
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') {
+    document.documentElement.classList.add('light-mode');
+    if (btnTheme) btnTheme.textContent = '☀️'; // 아이콘 변경
+} else {
+    if (btnTheme) btnTheme.textContent = '🌙';
+}
+
+// 2. 테마 전환 버튼 이벤트 수정
+if (btnTheme) {
+    btnTheme.addEventListener('click', () => {
+        // 클래스 토글
+        const isLight = document.documentElement.classList.toggle('light-mode');
+
+        // 상태에 따라 아이콘 변경 및 저장
+        if (isLight) {
+            btnTheme.textContent = '☀️';
+            localStorage.setItem('theme', 'light'); // 'light'로 저장
+        } else {
+            btnTheme.textContent = '🌙';
+            localStorage.setItem('theme', 'dark');  // 'dark'로 저장
+        }
+    });
+}
 
 // [NEW] 볼륨 슬라이더 기능
 const volSlider = document.getElementById('volume-slider');

@@ -1,32 +1,73 @@
-/* css/style.css - 통합 스타일시트 */
+/* css/style.css - 수정본 */
 
 /* =========================================
    1. 기본 변수 및 테마 설정
    ========================================= */
 :root {
-    /* 다크 테마 (기본) */
+    /* [다크 테마 - 기본] */
     --bg-color: #1a1a1a;
     --panel-color: #2d2d2d;
     --text-color: #ffffff;
     --accent-color: #3498db;
     --border-color: #444;
-    --fret-bg: #222;
-    --fret-line: #aaa;
+
+    /* [추가] 서브 텍스트 및 UI 배경 변수화 (하드코딩 제거용) */
+    --sub-text-color: #aaaaaa; /* 덜 중요한 텍스트 */
+    --ui-bg-dark: #444444;     /* 게이지, 타이머 배경 등 */
+
+    /* 프렛보드 관련 */
+    --fret-bg: #222222;
+    --fret-line: #555555;
+    --string-color: #aaaaaa;
+    --nut-border: #ffffff;
+
+    /* 보조 버튼 */
+    --sec-btn-bg: #444444;
+    --sec-btn-text: #dddddd;
+    --sec-btn-hover: #555555;
+
+    /* 기타 UI */
+    --nav-bg: #000000;
+    --switch-bg: #333333;
+    --card-hover: #3d3d3d;
+    --hint-color: #ffffff;
     --nav-height: 60px;
     --success-color: #2ecc71;
     --fail-color: #e74c3c;
+
+    --overlay-bg: rgba(0, 0, 0, 1);
 }
 
-/* 라이트 테마 */
+/* [라이트 테마] */
 :root.light-mode {
-    --bg-color: #f0f0f0;
+    --bg-color: #f5f5f7;
     --panel-color: #ffffff;
-    --text-color: #333333;
-    --accent-color: #2980b9;
-    --border-color: #ccc;
-    --fret-bg: #e0e0e0;
-    --fret-line: #555;
-    --nav-height: 60px;
+    --text-color: #1d1d1f;
+    --accent-color: #0071e3;
+    --border-color: #d2d2d7;
+
+    /* [추가] 라이트 모드용 서브 색상 */
+    --sub-text-color: #666666; /* 흰 배경에 잘 보이게 진한 회색 */
+    --ui-bg-dark: #e0e0e0;     /* 밝은 회색 배경 */
+
+    /* 프렛보드 반전 */
+    --fret-bg: #ffffff;
+    --fret-line: #cccccc;
+    --string-color: #333333;
+    --nut-border: #000000;
+
+    /* 보조 버튼 반전 */
+    --sec-btn-bg: #e0e0e0;
+    --sec-btn-text: #333333;
+    --sec-btn-hover: #d0d0d0;
+
+    /* 기타 UI 반전 */
+    --nav-bg: #ffffff;
+    --switch-bg: #e0e0e0;
+    --card-hover: #f2f2f2;
+    --hint-color: #555555;
+
+    --overlay-bg: rgba(255, 255, 255, 1);
 }
 
 body {
@@ -35,7 +76,6 @@ body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
     transition: background 0.3s, color 0.3s;
-    /* overflow: hidden; -> 제거: 프렛보드가 길어지면 페이지 전체 스크롤을 허용하기 위함 */
 }
 
 /* =========================================
@@ -43,29 +83,30 @@ body {
    ========================================= */
 .navbar {
     height: var(--nav-height);
-    background-color: #000;
+    background-color: var(--nav-bg);
     display: flex;
     align-items: center;
     padding: 0 20px;
     position: relative;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.3s, border-color 0.3s;
 }
 
-.navbar.centered-nav {
-    justify-content: center;
-}
+.navbar.centered-nav { justify-content: center; }
 
 .nav-switch {
-    background: #333;
+    background: var(--switch-bg);
     padding: 5px;
     border-radius: 30px;
     display: flex;
     gap: 5px;
+    transition: background 0.3s;
 }
 
 .nav-switch button {
     background: transparent;
     border: none;
-    color: #888;
+    color: var(--sub-text-color); /* [수정] #888 -> 변수 사용 */
     padding: 8px 24px;
     border-radius: 25px;
     font-size: 1rem;
@@ -75,7 +116,7 @@ body {
 
 .nav-switch button.active {
     background: var(--accent-color);
-    color: white;
+    color: white; /* 활성화된 텍스트는 항상 흰색 유지 */
     font-weight: bold;
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
 }
@@ -93,7 +134,7 @@ body {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #888;
+    color: var(--sub-text-color); /* [수정] #888 -> 변수 */
     padding: 5px;
     transition: transform 0.2s, color 0.2s;
 }
@@ -110,28 +151,22 @@ body {
 }
 .light-mode .volume-control { background: rgba(0,0,0,0.05); }
 
-#volume-slider {
-    width: 80px;
-    cursor: pointer;
-}
+#volume-slider { width: 80px; cursor: pointer; }
 
 /* =========================================
    3. 메인 레이아웃 & 오버레이
    ========================================= */
 .main-container {
-    /* 높이는 유지하되, 내용이 넘치면 스크롤 가능하게 auto로 변경 고려 */
     min-height: calc(100vh - var(--nav-height));
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    overflow-x: auto; /* 화면보다 내용이 넓으면 전체 스크롤 */
-    padding-bottom: 50px; /* 하단 여백 */
+    overflow-x: auto;
+    padding-bottom: 50px;
 }
 
 .app-section {
-    width: 100%;
-    /* max-width 제한을 풀어주거나 fit-content로 설정해야 프렛보드가 안 잘림 */
     width: fit-content;
     min-width: 600px;
     padding: 20px;
@@ -140,16 +175,23 @@ body {
 
 .hidden { display: none !important; }
 
-/* 시작 오버레이 */
+/* 시작 오버레이 수정 */
 #start-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9);
+
+    /* [수정] 하드코딩된 검은색 제거하고 변수 적용 */
+    background: var(--overlay-bg);
+
     z-index: 999;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
+
+    /* [추가] 텍스트 색상도 테마를 따라가도록 명시 */
+    color: var(--text-color);
+    transition: background 0.3s, color 0.3s; /* 부드러운 전환 */
 }
 
 #btn-init {
@@ -164,19 +206,22 @@ body {
 
 .secondary-btn {
     padding: 10px 20px;
-    background: #444;
-    color: #ddd;
+    background: var(--sec-btn-bg);
+    color: var(--sec-btn-text);
     border: none;
     border-radius: 5px;
     cursor: pointer;
     margin-top: 20px;
+    font-weight: bold;
+    transition: background 0.2s, color 0.2s;
 }
+.secondary-btn:hover { background: var(--sec-btn-hover); }
 
 /* =========================================
-   4. 설정 모달 (Modal) - 수정됨
+   4. 설정 모달 (Modal)
    ========================================= */
 dialog.modal {
-    background: transparent; /* 다이얼로그 자체 배경 투명화 */
+    background: transparent;
     border: none;
     padding: 0;
     margin: auto;
@@ -184,28 +229,22 @@ dialog.modal {
 }
 
 dialog.modal::backdrop {
-    background: rgba(0, 0, 0, 0.7); /* 뒷배경 어둡게 */
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(3px);
 }
 
 .modal-content {
-    background: #2d2d2d; /* [수정] 명시적인 배경색 지정 */
-    color: white;
+    background: var(--panel-color); /* [수정] 변수로 통일 (중복 제거) */
+    color: var(--text-color);       /* [수정] 텍스트 색상도 변수 사용 */
     width: 320px;
     padding: 30px;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     text-align: center;
-    border: 1px solid #444;
+    border: 1px solid var(--border-color); /* [수정] 테두리도 변수 */
     box-sizing: border-box;
 }
-
-/* 라이트모드 대응 */
-.light-mode .modal-content {
-    background: #ffffff;
-    color: #333;
-    border-color: #ccc;
-}
+/* .light-mode .modal-content 중복 블록 제거됨 */
 
 .modal-content h2 {
     margin-top: 0;
@@ -214,16 +253,13 @@ dialog.modal::backdrop {
     color: var(--accent-color);
 }
 
-.input-select-group {
-    text-align: left;
-    margin-bottom: 25px;
-}
+.input-select-group { text-align: left; margin-bottom: 25px; }
 
 .input-select-group label {
     display: block;
     margin-bottom: 8px;
     font-size: 0.9rem;
-    color: #bbb;
+    color: var(--sub-text-color); /* [수정] #bbb -> 변수 */
     font-weight: bold;
 }
 
@@ -231,8 +267,8 @@ dialog.modal::backdrop {
     width: 100%;
     padding: 12px;
     border-radius: 8px;
-    border: 1px solid #555;
-    background-color: var(--bg-color); /* 테마 배경색 */
+    border: 1px solid var(--border-color); /* [수정] #555 -> 변수 */
+    background-color: var(--bg-color);
     color: var(--text-color);
     font-size: 1rem;
     outline: none;
@@ -240,7 +276,6 @@ dialog.modal::backdrop {
     box-sizing: border-box;
     transition: border-color 0.3s;
 }
-
 #modal-audio-source:focus { border-color: var(--accent-color); }
 
 .modal-actions {
@@ -248,11 +283,11 @@ dialog.modal::backdrop {
     gap: 10px;
     width: 100%;
     justify-content: space-between;
-    align-items: center; /* [추가] 수직 중앙 정렬을 강제합니다 */
+    align-items: center;
 }
 .modal-actions button {
-    flex: 1; /* 버튼 너비 균등 */
-    height: 48px; /* 높이 통일 */
+    flex: 1;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,18 +300,10 @@ dialog.modal::backdrop {
     margin: 0 !important;
 }
 
-#btn-save-settings {
-    background-color: var(--accent-color);
-    color: white;
-}
-#btn-save-settings:hover { background-color: #2980b9; }
-
-#btn-close-settings {
-    background-color: #444;
-    color: #ccc;
-}
-#btn-close-settings:hover { background-color: #555; color: white; }
-
+#btn-save-settings { background-color: var(--accent-color); color: white; }
+#btn-save-settings:hover { background-color: #2980b9; } /* 호버는 고정값 유지해도 무방 */
+#btn-close-settings { background-color: var(--sec-btn-bg); color: var(--sec-btn-text); }
+#btn-close-settings:hover { background-color: var(--sec-btn-hover); color: white; }
 
 /* =========================================
    5. 튜너 앱 (Tuner App)
@@ -300,7 +327,7 @@ dialog.modal::backdrop {
 
 #tuner-freq {
     font-size: 1.5rem;
-    color: #888;
+    color: var(--sub-text-color); /* [수정] #888 -> 변수 */
     margin-bottom: 30px;
 }
 
@@ -308,7 +335,7 @@ dialog.modal::backdrop {
     position: relative;
     width: 100%;
     height: 40px;
-    background: #444;
+    background: var(--ui-bg-dark); /* [수정] #444 -> 변수 */
     border-radius: 20px;
     margin: 20px 0;
     overflow: hidden;
@@ -319,7 +346,7 @@ dialog.modal::backdrop {
     left: 50%;
     top: 0; bottom: 0;
     width: 2px;
-    background: rgba(255,255,255,0.5);
+    background: rgba(128,128,128,0.5); /* 흰/검 배경 모두 어울리게 수정 */
     z-index: 1;
 }
 
@@ -341,71 +368,58 @@ dialog.modal::backdrop {
     justify-content: space-between;
     padding: 5px 10px;
     font-size: 0.8rem;
-    color: #aaa;
+    color: var(--sub-text-color); /* [수정] #aaa -> 변수 */
 }
 
 /* =========================================
-   6. 프렛보드 게임 (Fretboard Game) 수정
+   6. 프렛보드 게임 (Fretboard Game)
    ========================================= */
-
-/* 모드 선택 전체 영역 */
-.mode-selector {
-    text-align: center;
-    padding-top: 20px;
-}
-
-/* "모드 선택" 제목 키우기 */
+.mode-selector { text-align: center; padding-top: 20px; }
 .mode-selector h3 {
-    font-size: 2.5rem;   /* 제목 크기 대폭 증가 */
-    margin-bottom: 40px; /* 아래 카드와의 간격 넓힘 */
+    font-size: 2.5rem;
+    margin-bottom: 40px;
     font-weight: bold;
     color: var(--text-color);
 }
 
-/* 카드 컨테이너 간격 조정 */
 .mode-cards {
     display: flex;
     justify-content: center;
-    gap: 30px;          /* 카드 사이 간격 넓힘 (20px -> 30px) */
+    gap: 30px;
     margin-top: 30px;
-    flex-wrap: wrap;    /* 화면이 좁으면 줄바꿈 허용 */
+    flex-wrap: wrap;
 }
 
-/* 개별 카드(버튼) 스타일 대폭 확대 */
 .card {
     background: var(--panel-color);
-    width: 240px;        /* 너비 증가 (140px -> 240px) */
-    padding: 50px 30px;  /* 내부 여백을 늘려 버튼 느낌 강화 */
-    border-radius: 20px; /* 둥근 모서리도 더 크게 */
+    width: 240px;
+    padding: 50px 30px;
+    border-radius: 20px;
     cursor: pointer;
     transition: transform 0.2s, background 0.2s, border-color 0.2s;
-    border: 3px solid transparent; /* 테두리 두께 증가 */
+    border: 3px solid transparent;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3); /* 입체감 추가 */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* 카드 호버 효과 */
 .card:hover {
-    transform: translateY(-10px); /* 더 많이 떠오르게 */
-    background: #3d3d3d;
+    transform: translateY(-10px);
+    background: var(--card-hover);
     border-color: var(--accent-color);
-    box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4); /* 호버 시 그림자 강조 */
+    box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
 }
 
-/* 카드 내부 제목 (이모지 포함) */
 .card h4 {
     margin: 0 0 15px 0;
-    font-size: 2.2rem;   /* 폰트 크기 2배 가까이 확대 */
+    font-size: 2.2rem;
     color: var(--text-color);
 }
-
-/* 카드 내부 설명 텍스트 */
 .card p {
-    font-size: 1.2rem;   /* 설명 글씨도 잘 보이게 확대 */
-    color: #aaa;
+    font-size: 1.2rem;
+    color: var(--sub-text-color); /* [수정] #aaa -> 변수 */
     margin: 0;
     font-weight: 500;
 }
@@ -415,7 +429,7 @@ dialog.modal::backdrop {
 .timer-container {
     width: 100%;
     height: 10px;
-    background: #444;
+    background: var(--ui-bg-dark); /* [수정] #444 -> 변수 */
     border-radius: 5px;
     overflow: hidden;
     margin-bottom: 10px;
@@ -452,10 +466,10 @@ dialog.modal::backdrop {
 
 .string-hint {
     font-size: 1.5rem;
-    color: #ffffff; /* 하얀색 */
-    font-weight: bold; /* 볼드체 */
+    color: var(--hint-color);
+    font-weight: bold;
     margin-top: 10px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 #feedback-msg { margin-top: 20px; font-size: 1.2rem; height: 30px; }
@@ -468,7 +482,7 @@ dialog.modal::backdrop {
 .sustain-bar-bg {
     width: 200px;
     height: 8px;
-    background: #333;
+    background: var(--ui-bg-dark); /* [수정] #333 -> 변수 */
     border-radius: 4px;
     margin: 15px auto;
     overflow: hidden;
@@ -481,24 +495,21 @@ dialog.modal::backdrop {
 }
 
 /* =========================================
-   7. 가상 프렛보드 (Virtual Fretboard) - 수정됨
+   7. 가상 프렛보드 (Virtual Fretboard)
    ========================================= */
 .virtual-fretboard {
     margin-top: 20px;
-    background: #222;
+    background: var(--fret-bg);
     padding: 10px;
     border-radius: 10px;
-    border: 2px solid #444;
-
-    /* [수정] 가로 스크롤 방지 & 자식 크기에 맞춰 늘어나기 */
+    border: 2px solid var(--border-color);
     width: max-content;
-    min-width: 100%; /* 최소한 화면 너비만큼은 차지 */
+    min-width: 100%;
     overflow-x: visible;
     box-sizing: border-box;
-
-    /* 중앙 정렬 */
     margin-left: auto;
     margin-right: auto;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .string-row {
@@ -510,13 +521,12 @@ dialog.modal::backdrop {
 .string-row.numbers {
     height: 20px;
     margin-bottom: 5px;
-    /* 배경 통일감 */
     background: transparent;
-    border-top: 1px solid #444;
+    border-top: 1px solid var(--border-color); /* [수정] #444 -> 변수 */
 }
 
 .fret-cell {
-    width: 60px; /* [수정] 프렛 간격 넓힘 (기존 40px -> 60px) */
+    width: 60px;
     height: 100%;
     border-right: 2px solid var(--fret-line);
     display: flex;
@@ -524,20 +534,20 @@ dialog.modal::backdrop {
     align-items: center;
     position: relative;
     cursor: pointer;
-    flex-shrink: 0; /* [중요] 공간 부족해도 줄어들지 않음 */
+    flex-shrink: 0;
     box-sizing: border-box;
 }
 
 .fret-cell.open {
-    width: 45px; /* 너트 부분 너비 */
+    width: 45px;
     background: var(--panel-color);
-    border-right: 4px solid var(--text-color);
+    border-right: 5px solid var(--nut-border);
     flex-shrink: 0;
 }
 
 .fret-cell.number {
     border: none;
-    color: #888;
+    color: var(--sub-text-color); /* [수정] #888 -> 변수 */
     font-size: 0.8rem;
     cursor: default;
 }
@@ -545,17 +555,22 @@ dialog.modal::backdrop {
 /* 숫자행의 0프렛 더미 */
 .fret-cell.open.number-bg {
     background: transparent;
-    border-right: 4px solid transparent; /* 위쪽 너트와 너비 맞춤 */
+    /* [수정] 4px -> 5px로 수정하여 너트 두께와 일치시킴 */
+    border-right: 5px solid transparent;
 }
 
 /* 기타 줄 시각화 */
 .string-line {
     width: 100%;
-    background: #aaa;
+    background: var(--string-color);
+    height: 2px;
     pointer-events: none;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
-/* 클릭 효과 */
-.fret-cell.clicked { background-color: rgba(52, 152, 219, 0.5); }
-.fret-cell:hover:not(.number) { background-color: rgba(255, 255, 255, 0.1); }
+.fret-cell.clicked {
+    background-color: var(--accent-color);
+    opacity: 0.8;
+}
+.fret-cell:hover:not(.number) {
+    background-color: rgba(128, 128, 128, 0.2);
+}
