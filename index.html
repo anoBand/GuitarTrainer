@@ -3,204 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Guitar Tuner (Stable)</title>
-
+    <title>Guitar Master Web</title>
     <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
 
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #222; color: white; padding-top: 30px; }
-
-        /* 버튼 상태 스타일 */
-        #startBtn {
-            padding: 15px 30px; font-size: 20px; background: #555; color: #aaa;
-            border: none; border-radius: 50px; cursor: not-allowed; margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-        #startBtn.ready { background: #007bff; color: white; cursor: pointer; }
-        #startBtn:disabled { opacity: 0.7; cursor: wait; }
-
-        .container { max-width: 500px; margin: 0 auto; background: #333; padding: 20px; border-radius: 15px; }
-        #note { font-size: 100px; font-weight: bold; margin: 10px 0; color: #fff; }
-        #freq { font-size: 24px; color: #aaa; margin-bottom: 20px; }
-
-        .gauge-wrapper { position: relative; width: 100%; height: 30px; background: #444; border-radius: 15px; overflow: hidden; margin-bottom: 10px; }
-        .center-marker { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #fff; z-index: 2; }
-        .needle {
-            position: absolute; top: 0; bottom: 0; left: 50%; width: 10px; height: 30px;
-            background: #ff4757; border-radius: 5px; transform: translateX(-50%);
-            transition: left 0.1s cubic-bezier(0.1, 0.7, 1.0, 0.1);
-        }
-        .needle.match { background: #2ecc71; }
-
-        .vol-wrapper { width: 100%; height: 10px; background: #222; margin-top: 5px; border-radius: 5px; overflow: hidden; }
-        .vol-bar { width: 0%; height: 100%; background: #00a8ff; transition: width 0.05s; }
-
-        #console {
-            margin-top: 20px; padding: 10px; background: #000; color: #0f0;
-            font-family: monospace; text-align: left; height: 150px; overflow-y: auto; font-size: 12px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/tuner.css">
+    <link rel="stylesheet" href="css/fretboard.css">
 </head>
 <body>
 
-    <h1>Web Tuner (Stable)</h1>
-    <button id="startBtn" onclick="startTuner()" disabled>⏳ 라이브러리 로딩 중...</button>
-
-    <div class="container">
-        <div id="note">--</div>
-        <div id="freq">0.0 Hz</div>
-
-        <div class="gauge-wrapper">
-            <div class="center-marker"></div>
-            <div id="needle" class="needle"></div>
+    <nav class="navbar">
+        <div class="logo">🎸 Guitar Master</div>
+        <div class="nav-buttons">
+            <button id="nav-tuner" class="active">튜너</button>
+            <button id="nav-fretboard">프렛보드 트레이너</button>
         </div>
+    </nav>
 
-        <div style="text-align: left; font-size: 12px; color: #aaa; margin-top: 15px;">Input Level:</div>
-        <div class="vol-wrapper">
-            <div id="volBar" class="vol-bar"></div>
+    <div id="start-overlay">
+        <div class="overlay-content">
+            <h1>Guitar Master Web</h1>
+            <p>튜너와 프렛보드 연습을 시작하려면 아래 버튼을 누르세요.</p>
+            <button id="btn-init">🎤 마이크 켜기 & 시작</button>
         </div>
     </div>
 
-    <div id="console">페이지 로드 중...<br></div>
+    <div class="main-container">
+        <section id="tuner-app" class="app-section">
+            <div class="tuner-display">
+                <div id="tuner-note">--</div>
+                <div id="tuner-freq">0.0 Hz</div>
 
-    <script>
-        let audioContext;
-        let pitch;
-        let micStream;
-        let analyser;
-        let dataArray;
-        let isRunning = false;
+                <div class="gauge-wrapper">
+                    <div class="center-line"></div>
+                    <div class="ticks">
+                        <span class="tick left">-50</span>
+                        <span class="tick center">0</span>
+                        <span class="tick right">+50</span>
+                    </div>
+                    <div id="tuner-needle" class="needle"></div>
+                </div>
+                <div id="tuner-status">줄을 튕겨보세요</div>
+            </div>
+        </section>
 
-        function log(msg) {
-            const consoleDiv = document.getElementById('console');
-            const time = new Date().toLocaleTimeString();
-            consoleDiv.innerHTML = `[${time}] ${msg}<br>` + consoleDiv.innerHTML;
-        }
+        <section id="fretboard-app" class="app-section hidden">
+            <div class="game-header">
+                <div class="timer-container">
+                    <div id="timer-bar" class="bar"></div>
+                </div>
+                <div class="score-board">SCORE: <span id="score">0</span></div>
+            </div>
 
-        // 1. 라이브러리 로드 체크 (핵심 수정 사항)
-        // ml5 객체가 로드되었는지 0.5초마다 확인합니다.
-        const checkLibrary = setInterval(() => {
-            if (typeof ml5 !== 'undefined') {
-                clearInterval(checkLibrary);
-                log("✅ ml5.js 라이브러리 로드 성공!");
-                const btn = document.getElementById('startBtn');
-                btn.innerText = "🎤 마이크 켜기 & 튜닝 시작";
-                btn.disabled = false;
-                btn.classList.add('ready');
-            } else {
-                console.log("Waiting for ml5...");
-            }
-        }, 500);
+            <div class="question-box">
+                <div class="instruction">다음 위치의 음을 연주하세요!</div>
 
-        // 5초 뒤에도 로드가 안 되면 에러 메시지 출력
-        setTimeout(() => {
-            if (typeof ml5 === 'undefined') {
-                log("❌ 오류: 라이브러리 로드 실패. 인터넷 연결을 확인하거나 새로고침 하세요.");
-                document.getElementById('startBtn').innerText = "로딩 실패 (새로고침 필요)";
-            }
-        }, 5000);
+                <div class="target-display">
+                    <div id="target-note-display" class="big-note">?</div>
+                    <div id="target-string-hint" class="string-hint">-- 번 줄</div>
+                </div>
 
-        async function startTuner() {
-            const btn = document.getElementById('startBtn');
-            if (!btn.classList.contains('ready')) return;
+                <div id="feedback-msg">준비되면 시작합니다</div>
+            </div>
 
-            btn.disabled = true;
-            btn.innerText = "시스템 초기화 중...";
+            <div class="controls">
+                <button id="btn-game-restart" class="secondary-btn">게임 재시작</button>
+            </div>
+        </section>
+    </div>
 
-            try {
-                log("오디오 컨텍스트 시작...");
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-                log("마이크 권한 요청...");
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-
-                setupVolumeMeter(micStream);
-
-                log("Pitch 모델(CREPE) 다운로드 시작...");
-
-                // 모델 경로 명시 (0.12.2 버전 호환)
-                const modelUrl = 'https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/';
-
-                pitch = ml5.pitchDetection(modelUrl, audioContext, micStream, modelLoaded);
-
-            } catch (err) {
-                log("❌ 에러 발생: " + err.message);
-                alert("마이크 권한이 필요합니다. 브라우저 설정에서 허용해주세요.");
-                btn.disabled = false;
-                btn.innerText = "다시 시도";
-            }
-        }
-
-        function modelLoaded() {
-            log("✅ 모델 로드 완료! 튜닝을 시작합니다.");
-            document.getElementById('startBtn').innerText = "🟢 작동 중 (소리를 내보세요)";
-            isRunning = true;
-            getPitch();
-        }
-
-        function getPitch() {
-            pitch.getPitch(function(err, frequency) {
-                if (frequency) {
-                    updateUI(frequency);
-                }
-                if(isRunning) {
-                    requestAnimationFrame(getPitch); // 부드러운 루프를 위해 requestAnimationFrame 사용
-                }
-            });
-        }
-
-        function updateUI(frequency) {
-            const noteElem = document.getElementById('note');
-            const freqElem = document.getElementById('freq');
-            const needle = document.getElementById('needle');
-
-            freqElem.innerText = frequency.toFixed(1) + ' Hz';
-
-            const midiNum = 12 * (Math.log2(frequency / 440)) + 69;
-            const noteIndex = Math.round(midiNum) % 12;
-            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-            const note = notes[noteIndex];
-
-            noteElem.innerText = note;
-
-            const targetFreq = 440 * Math.pow(2, (Math.round(midiNum) - 69) / 12);
-            const cents = 1200 * Math.log2(frequency / targetFreq);
-
-            let position = 50 + (cents);
-            if (position < 5) position = 5;
-            if (position > 95) position = 95;
-
-            needle.style.left = position + '%';
-
-            if (Math.abs(cents) < 5) {
-                needle.classList.add('match');
-            } else {
-                needle.classList.remove('match');
-            }
-        }
-
-        function setupVolumeMeter(stream) {
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            drawVolume();
-        }
-
-        function drawVolume() {
-            requestAnimationFrame(drawVolume);
-            analyser.getByteTimeDomainData(dataArray);
-            let sum = 0;
-            for(let i = 0; i < dataArray.length; i++) {
-                const x = (dataArray[i] - 128) / 128.0;
-                sum += x * x;
-            }
-            const rms = Math.sqrt(sum / dataArray.length);
-            const volBar = document.getElementById('volBar');
-            let width = Math.min(rms * 1000, 100);
-            volBar.style.width = width + '%';
-        }
-    </script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
