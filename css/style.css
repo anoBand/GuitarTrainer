@@ -167,6 +167,8 @@ body {
     position: relative;
     overflow-x: auto;
     overflow-y: auto;
+    will-change: transform; /* 브라우저에게 변경 가능성을 미리 알려줌 */
+    transform: translateZ(0); /* 하드웨어 가속 활성화 */
 }
 
 .app-section {

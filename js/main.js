@@ -143,3 +143,38 @@ function startLoop() {
     }
     loop();
 }
+
+/* =========================================
+   [추가] 탭 전환 시 랙/흰 화면 방지 최적화
+   ========================================= */
+document.addEventListener("visibilitychange", async () => {
+    // 탭이 다시 활성화되었을 때 (화면에 보일 때)
+    if (!document.hidden) {
+
+        // 1. 오디오 컨텍스트가 멈춰있다면 즉시 깨우기
+        // (SoundManager나 전역 변수로 audioCtx에 접근 가능해야 함)
+        // 예: import { audioCtx } from './core/sound.js'; 필요할 수 있음
+        // 만약 직접 접근이 어렵다면, 빈 소리를 짧게 재생해서 오디오 엔진을 강제 예열합니다.
+        try {
+            const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = tempCtx.createOscillator();
+            const gain = tempCtx.createGain();
+            gain.gain.value = 0.001; // 거의 안 들리는 소리
+            osc.connect(gain);
+            gain.connect(tempCtx.destination);
+            osc.start();
+            osc.stop(tempCtx.currentTime + 0.01);
+            setTimeout(() => tempCtx.close(), 100);
+        } catch (e) {
+            console.log("Audio wake up skipped");
+        }
+
+        // 2. 화면 강제 리페인트 (렌더링 큐가 밀려 멈춘 화면을 강제로 그림)
+        requestAnimationFrame(() => {
+            document.body.style.transform = 'translateZ(0)'; // GPU 가속 트리거
+            setTimeout(() => {
+                document.body.style.transform = 'none';
+            }, 50);
+        });
+    }
+});

@@ -1,6 +1,6 @@
 // js/fretboard/game.js
 import { getNoteFromFreq } from '../core/utils.js';
-import { SoundManager } from '../core/sound.js'; // 효과음 추가
+import { SoundManager } from '../core/sound.js';
 
 export class FretboardGame {
     constructor() {
@@ -63,6 +63,8 @@ export class FretboardGame {
             this.ui.timerText.innerText = '∞';
         }
 
+        // 게임 시작 시 이전 타겟 초기화 (중복 방지 로직이 첫 문제에서 꼬이지 않게)
+        this.target = null;
         this.nextQuestion();
     }
 
@@ -75,18 +77,23 @@ export class FretboardGame {
     nextQuestion() {
         if (!this.isPlaying) return;
 
-        // 랜덤 문제
-        const questions = [
-            { note: 'E', string: 6 }, { note: 'F', string: 6 }, { note: 'G', string: 6 },
-            { note: 'A', string: 5 }, { note: 'B', string: 5 }, { note: 'C', string: 5 },
-            { note: 'D', string: 4 }, { note: 'E', string: 4 }, { note: 'F', string: 4 },
-            { note: 'G', string: 3 }, { note: 'A', string: 3 },
-            { note: 'B', string: 2 }, { note: 'C', string: 2 },
-            { note: 'E', string: 1 }, { note: 'F', string: 1 }, { note: 'G', string: 1 }
-        ];
-        this.target = questions[Math.floor(Math.random() * questions.length)];
+        let newTarget;
+        let retryCount = 0;
 
-        this.ui.targetNote.innerText = this.target.note;
+        // 1. 중복 방지 (이전 문제와 동일하면 다시 생성)
+        do {
+            newTarget = this.generateRandomQuestion();
+            retryCount++;
+        } while (
+            this.target &&
+            newTarget.note === this.target.note &&
+            retryCount < 10 // 무한 루프 방지 안전장치
+        );
+
+        this.target = newTarget;
+
+        // 2. UI 업데이트 (displayNote 사용)
+        this.ui.targetNote.innerText = this.target.displayNote;
         this.ui.targetString.innerText = `${this.target.string}번 줄`;
         this.ui.msg.innerText = "연주하세요 (또는 클릭)";
         this.ui.msg.className = "";
@@ -94,6 +101,48 @@ export class FretboardGame {
         this.resetHold();
 
         if (this.mode === 'infinity') this.startTime = Date.now();
+    }
+
+    // [신규] 랜덤 문제 생성 메서드
+    generateRandomQuestion() {
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        // 1번 줄(E) 부터 6번 줄(E) 까지의 개방현 노트
+        const openStringNotes = ['E', 'B', 'G', 'D', 'A', 'E'];
+
+        // 1. 랜덤 줄 (1~6번)
+        const stringNum = Math.floor(Math.random() * 6) + 1;
+
+        // 2. 랜덤 프렛 (0~12프렛: 초보자~중급자 범위)
+        const fret = Math.floor(Math.random() * 13);
+
+        // 3. 노트 계산
+        const openNote = openStringNotes[stringNum - 1];
+        const startIndex = notes.indexOf(openNote);
+        const noteIndex = (startIndex + fret) % 12;
+        const note = notes[noteIndex]; // 표준 Sharp 표기 (C# 등)
+
+        const isNatural = !note.includes('#');
+
+        // [Free 모드] 난이도 조절: 내추럴 노트(도레미...)만 출제
+        if (this.mode === 'free' && !isNatural) {
+            return this.generateRandomQuestion(); // 재귀 호출로 다시 뽑기
+        }
+
+        // [실전/무한 모드] 표기 확장: # 또는 b 랜덤 표시
+        let displayNote = note;
+        if ((this.mode === 'timeAttack' || this.mode === 'infinity') && !isNatural) {
+            // 50% 확률로 Flat(b) 표기로 변환하여 보여줌
+            if (Math.random() > 0.5) {
+                const flatMap = { 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb' };
+                if (flatMap[note]) displayNote = flatMap[note];
+            }
+        }
+
+        return {
+            note: note,              // 로직용 (C# 고정)
+            displayNote: displayNote,// 화면 표시용 (Db 등 가능)
+            string: stringNum
+        };
     }
 
     // --- 입력 처리 ---
@@ -107,6 +156,7 @@ export class FretboardGame {
             const detected = getNoteFromFreq(frequency);
             const TOLERANCE = 40;
 
+            // 정답 비교는 표준 note(C#)로 수행하여, 화면이 Db여도 C# 소리를 인식함
             if (detected.note === this.target.note && Math.abs(detected.cents) < TOLERANCE) {
                 // 지속 여부 체크
                 if (this.holdingNote === detected.note) {

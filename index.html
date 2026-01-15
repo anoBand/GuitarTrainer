@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
     <nav class="navbar centered-nav">
         <div class="nav-switch">
-            <button id="nav-tuner" class="active">튜너</button>
-            <button id="nav-fretboard">프렛보드</button>
+            <button id="nav-tuner">튜너</button>
+            <button id="nav-fretboard" class="active">프렛보드</button>
         </div>
         <div class="nav-controls">
             <div class="volume-control" title="효과음 볼륨">
@@ -42,14 +41,14 @@
 
     <div id="start-overlay">
         <div class="overlay-content">
-            <h1>Guitar Master</h1>
-            <p>기타 연습을 시작합니다.</p>
-            <button id="btn-init">🎤 시작하기</button>
+            <h1>기타 트레이너</h1>
+            <p>실제 줄을 치며 지판을 외웁니다.</p>
+            <button id="btn-init">시작하기</button>
         </div>
     </div>
 
     <div class="main-container">
-        <section id="tuner-app" class="app-section">
+        <section id="tuner-app" class="app-section hidden">
             <div class="tuner-display">
                 <div id="tuner-note">--</div>
                 <div id="tuner-freq">0.0 Hz</div>
@@ -61,7 +60,7 @@
             </div>
         </section>
 
-        <section id="fretboard-app" class="app-section hidden">
+        <section id="fretboard-app" class="app-section">
             <div id="game-mode-select" class="mode-selector">
                 <h3>모드 선택</h3>
                 <div class="mode-cards">
