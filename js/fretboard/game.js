@@ -187,8 +187,9 @@ export class FretboardGame {
         if (!this.isPlaying) return;
 
         // 클릭은 Sustain 없이 즉시 판정
-        // 줄 번호는 무시하고 음이름만 맞으면 정답 처리 (마이크와 동일 조건)
-        if (note === this.target.note) {
+        // [수정] 줄 번호(String)와 노트(Note)가 모두 일치해야 정답 처리
+        // stringNum이 문자열로 넘어올 수 있으므로 숫자로 변환하여 비교
+        if (note === this.target.note && Number(stringNum) === this.target.string) {
             this.handleSuccess("Click");
         } else {
             // 클릭 오답 시 피드백
