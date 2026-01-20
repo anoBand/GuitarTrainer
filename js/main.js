@@ -8,6 +8,8 @@ import { SoundManager } from './core/sound.js';
 const tuner = new TunerApp();
 const game = new FretboardGame();
 let currentMode = 'tuner';
+let animationFrameId = null; // 루프 제어용 ID
+let isLoopRunning = false;   // 루프 상태 플래그
 
 // [NEW] 가상 프렛보드 초기화 (클릭 시 game 인스턴스에 전달)
 const vFretboard = new VirtualFretboard('virtual-fretboard', (note, string) => {
@@ -22,10 +24,16 @@ const overlay = document.getElementById('start-overlay');
 
 btnInit.addEventListener('click', async () => {
     btnInit.innerText = "연결 중...";
-    // 초기에는 기본 장치로 시작하거나, 이전에 저장된 ID가 있다면 그것을 사용 가능
-    await startAudio();
-    overlay.style.display = 'none';
-    startLoop();
+    try {
+        await startAudio();
+        overlay.style.display = 'none';
+
+        // 오디오 시작 후 루프 가동
+        startLoop();
+    } catch (err) {
+        console.error("Audio init failed:", err);
+        btnInit.innerText = "오류 발생 (재시도)";
+    }
 });
 
 /* =========================================
@@ -33,40 +41,38 @@ btnInit.addEventListener('click', async () => {
    ========================================= */
 
 const btnTheme = document.getElementById('btn-theme');
-
-// 1. 페이지 로드 시 저장된 테마 불러오기
 const savedTheme = localStorage.getItem('theme');
+
 if (savedTheme === 'light') {
     document.documentElement.classList.add('light-mode');
-    if (btnTheme) btnTheme.textContent = '☀️'; // 아이콘 변경
+    if (btnTheme) btnTheme.textContent = '☀️';
 } else {
     if (btnTheme) btnTheme.textContent = '🌙';
 }
 
-// 2. 테마 전환 버튼 이벤트 수정
 if (btnTheme) {
     btnTheme.addEventListener('click', () => {
-        // 클래스 토글
         const isLight = document.documentElement.classList.toggle('light-mode');
-
-        // 상태에 따라 아이콘 변경 및 저장
         if (isLight) {
             btnTheme.textContent = '☀️';
-            localStorage.setItem('theme', 'light'); // 'light'로 저장
+            localStorage.setItem('theme', 'light');
         } else {
             btnTheme.textContent = '🌙';
-            localStorage.setItem('theme', 'dark');  // 'dark'로 저장
+            localStorage.setItem('theme', 'dark');
         }
     });
 }
 
 // [NEW] 볼륨 슬라이더 기능
 const volSlider = document.getElementById('volume-slider');
-volSlider.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    SoundManager.setVolume(val);
-    SoundManager.playTone(440, 'sine', 0.1);
-});
+if (volSlider) {
+    volSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        SoundManager.setVolume(val);
+        // 피드백 사운드는 너무 자주 울리지 않도록 디바운스 처리 추천 (여기선 단순화)
+        // SoundManager.playTone(440, 'sine', 0.1);
+    });
+}
 
 // --- 2. ⚙️ 설정 모달 로직 (기어 아이콘) ---
 const btnSettings = document.getElementById('btn-settings');
@@ -75,33 +81,34 @@ const modalSelect = document.getElementById('modal-audio-source');
 const btnSave = document.getElementById('btn-save-settings');
 const btnClose = document.getElementById('btn-close-settings');
 
-// 설정 열기
-btnSettings.addEventListener('click', async () => {
-    modal.showModal();
-    // 장치 목록 갱신
-    const devices = await getAudioDevices();
-    modalSelect.innerHTML = '';
-    devices.forEach(device => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label || `Mic ${modalSelect.length + 1}`;
-        modalSelect.add(option);
+if (btnSettings) {
+    btnSettings.addEventListener('click', async () => {
+        modal.showModal();
+        const devices = await getAudioDevices();
+        modalSelect.innerHTML = '';
+        devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Mic ${modalSelect.length + 1}`;
+            modalSelect.add(option);
+        });
     });
-});
+}
 
-// 설정 저장 (장치 변경)
-btnSave.addEventListener('click', async () => {
-    const selectedDeviceId = modalSelect.value;
-    if (selectedDeviceId) {
-        // 기존 스트림 닫고 새로 시작하는 로직은 startAudio 내부 혹은 별도 처리 필요하지만,
-        // 여기서는 간단히 페이지 리로드 없이 오디오 컨텍스트 재시작 호출
-        // (실제로는 stopAudio 구현이 필요하나, startAudio 재호출로 덮어쓰기 시도)
-        await startAudio(selectedDeviceId);
-    }
-    modal.close();
-});
+if (btnSave) {
+    btnSave.addEventListener('click', async () => {
+        const selectedDeviceId = modalSelect.value;
+        if (selectedDeviceId) {
+            // 장치 변경 시 기존 루프 잠시 중단 후 재시작 권장
+            stopLoop();
+            await startAudio(selectedDeviceId);
+            startLoop();
+        }
+        modal.close();
+    });
+}
 
-btnClose.addEventListener('click', () => modal.close());
+if (btnClose) btnClose.addEventListener('click', () => modal.close());
 
 
 // --- 3. 탭 전환 ---
@@ -110,8 +117,10 @@ const navGame = document.getElementById('nav-fretboard');
 const secTuner = document.getElementById('tuner-app');
 const secGame = document.getElementById('fretboard-app');
 
-navTuner.addEventListener('click', () => switchTab('tuner'));
-navGame.addEventListener('click', () => switchTab('game'));
+if (navTuner && navGame) {
+    navTuner.addEventListener('click', () => switchTab('tuner'));
+    navGame.addEventListener('click', () => switchTab('game'));
+}
 
 function switchTab(mode) {
     currentMode = mode;
@@ -129,52 +138,85 @@ function switchTab(mode) {
     }
 }
 
-// --- 4. 메인 루프 ---
-function startLoop() {
-    function loop() {
-        getPitch((frequency, volume) => {
-            if (currentMode === 'tuner') {
-                tuner.update(frequency);
-            } else {
-                game.update(frequency, volume);
-            }
-        });
-        requestAnimationFrame(loop);
-    }
-    loop();
+// --- 4. 메인 루프 (최적화 적용) ---
+
+function loop() {
+    if (!isLoopRunning) return; // 플래그가 꺼지면 실행 중단
+
+    getPitch((frequency, volume) => {
+        if (currentMode === 'tuner') {
+            tuner.update(frequency);
+        } else {
+            game.update(frequency, volume);
+        }
+    });
+
+    animationFrameId = requestAnimationFrame(loop);
 }
 
+function startLoop() {
+    if (isLoopRunning) return; // 이미 실행 중이면 중복 실행 방지
+    isLoopRunning = true;
+    loop();
+    console.log("Game Loop Started");
+}
+
+function stopLoop() {
+    isLoopRunning = false;
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    console.log("Game Loop Stopped");
+}
+
+
 /* =========================================
-   [추가] 탭 전환 시 랙/흰 화면 방지 최적화
+   [최적화] 탭 전환 / 백그라운드 처리
    ========================================= */
 document.addEventListener("visibilitychange", async () => {
-    // 탭이 다시 활성화되었을 때 (화면에 보일 때)
-    if (!document.hidden) {
+    if (document.hidden) {
+        // [1] 탭이 가려지면: 루프를 완전히 멈춰서 CPU/배터리 절약 및 프레임 적체 방지
+        stopLoop();
 
-        // 1. 오디오 컨텍스트가 멈춰있다면 즉시 깨우기
-        // (SoundManager나 전역 변수로 audioCtx에 접근 가능해야 함)
-        // 예: import { audioCtx } from './core/sound.js'; 필요할 수 있음
-        // 만약 직접 접근이 어렵다면, 빈 소리를 짧게 재생해서 오디오 엔진을 강제 예열합니다.
-        try {
-            const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = tempCtx.createOscillator();
-            const gain = tempCtx.createGain();
-            gain.gain.value = 0.001; // 거의 안 들리는 소리
-            osc.connect(gain);
-            gain.connect(tempCtx.destination);
-            osc.start();
-            osc.stop(tempCtx.currentTime + 0.01);
-            setTimeout(() => tempCtx.close(), 100);
-        } catch (e) {
-            console.log("Audio wake up skipped");
+        // (선택사항) 게임이 진행 중이었다면 일시정지 로직 추가 가능
+        // if (game.isPlaying && game.mode !== 'free') { ... }
+
+    } else {
+        // [2] 탭이 다시 보이면:
+
+        // A. 오디오 컨텍스트 깨우기 (Resume AudioContext)
+        // 브라우저는 비활성 탭의 오디오를 'Suspended' 상태로 만듭니다.
+        if (SoundManager.audioContext && SoundManager.audioContext.state === 'suspended') {
+            await SoundManager.audioContext.resume();
         }
 
-        // 2. 화면 강제 리페인트 (렌더링 큐가 밀려 멈춘 화면을 강제로 그림)
+        // B. 오디오 엔진 예열 (Warm-up)
+        // 아주 짧은 무음을 재생하여 오디오 출력 지연(Latency)을 초기화합니다.
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const tempCtx = new AudioContext();
+                const osc = tempCtx.createOscillator();
+                const gain = tempCtx.createGain();
+                gain.gain.value = 0.0001; // 들리지 않는 소리
+                osc.connect(gain);
+                gain.connect(tempCtx.destination);
+                osc.start();
+                osc.stop(tempCtx.currentTime + 0.01);
+                setTimeout(() => tempCtx.close(), 100);
+            }
+        } catch (e) {
+            // 무시 (오디오 권한 이슈 등)
+        }
+
+        // C. 루프 재개
+        startLoop();
+
+        // D. 화면 강제 갱신 (리페인트 유도)
         requestAnimationFrame(() => {
-            document.body.style.transform = 'translateZ(0)'; // GPU 가속 트리거
-            setTimeout(() => {
-                document.body.style.transform = 'none';
-            }, 50);
+            document.body.style.opacity = '0.99';
+            requestAnimationFrame(() => document.body.style.opacity = '1');
         });
     }
 });
