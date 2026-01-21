@@ -6,7 +6,7 @@ export class VirtualFretboard {
         this.container = document.getElementById(containerId);
         this.onNoteClick = onNoteClick;
         this.openStrings = ['E', 'B', 'G', 'D', 'A', 'E']; // 1번줄 ~ 6번줄
-        this.fretCount = 15; // 15프렛까지 확장
+        this.fretCount = 22; // [수정] 22프렛까지 확장
         this.render();
     }
 
@@ -19,9 +19,10 @@ export class VirtualFretboard {
         // 0프렛(너트)은 고정 너비
         if (fret === 0) return 30;
 
-        // 1프렛 기준 약 75px에서 시작하여 점차 좁아지는 비율 적용 (0.943은 17.817 법칙 근사치)
-        const baseWidth = 75;
+        // [수정] 1프렛 기준 약 90px에서 시작 (기존 75px 대비 20% 확대)
+        const baseWidth = 90;
         const decayFactor = 0.94;
+        // 최소 너비도 25 -> 28 정도로 약간 조정 가능하나 유지
         return Math.max(25, baseWidth * Math.pow(decayFactor, fret));
     }
 
@@ -39,7 +40,7 @@ export class VirtualFretboard {
             const openCell = this.createFretCell(openNote, 0, stringNum, true);
             row.appendChild(openCell);
 
-            // 1~15프렛
+            // 1~22프렛
             let currentNoteIndex = NOTES.indexOf(openNote);
             for (let f = 1; f <= this.fretCount; f++) {
                 currentNoteIndex = (currentNoteIndex + 1) % 12;
@@ -59,11 +60,11 @@ export class VirtualFretboard {
         cell.dataset.note = note;
         cell.dataset.string = stringNum;
 
-        // [디테일] 계산된 너비 적용 (flex-grow 방지를 위해 flex 스타일 강제 지정)
+        // [디테일] 계산된 너비 적용
         const width = this.getFretWidth(fret);
         cell.style.flex = `0 0 ${width}px`;
         cell.style.width = `${width}px`;
-        cell.style.position = 'relative'; // 인레이 절대 위치를 위해
+        cell.style.position = 'relative';
 
         // 시각적 줄 (String Line)
         const stringLine = document.createElement('div');
@@ -71,9 +72,7 @@ export class VirtualFretboard {
         stringLine.style.height = `${stringNum}px`; // 저음현일수록 굵게
         cell.appendChild(stringLine);
 
-        // [신규] 인레이(Inlay) 마크 추가
-        // 4번줄(D)의 3, 5, 7, 9, 12, 15 프렛에 표시
-        // 4번줄 셀의 상단(top: 0)에 배치하면 3번줄과 4번줄 사이에 위치하게 됨
+        // [인레이] 4번줄(D) 기준 배치
         if (stringNum === 4 && !isOpen) {
             this.addInlayMarker(cell, fret);
         }
@@ -91,20 +90,20 @@ export class VirtualFretboard {
     }
 
     addInlayMarker(cell, fret) {
-        const inlays = [3, 5, 7, 9, 12, 15];
+        // [수정] 22프렛 확장에 따른 인레이 추가 (17, 19, 21)
+        const inlays = [3, 5, 7, 9, 12, 15, 17, 19, 21];
         if (!inlays.includes(fret)) return;
 
         const markerContainer = document.createElement('div');
-        // 스타일: 부모(4번줄 셀)의 상단 중앙에 위치 -> 3~4번줄 사이로 보임
         markerContainer.style.position = 'absolute';
         markerContainer.style.top = '0';
         markerContainer.style.left = '50%';
         markerContainer.style.transform = 'translate(-50%, -50%)';
         markerContainer.style.zIndex = '5';
-        markerContainer.style.pointerEvents = 'none'; // 클릭 방해 방지
+        markerContainer.style.pointerEvents = 'none';
         markerContainer.style.display = 'flex';
         markerContainer.style.flexDirection = 'column';
-        markerContainer.style.gap = '15px'; // 더블 도트 간격
+        markerContainer.style.gap = '15px';
 
         // 12프렛은 더블 도트, 나머지는 싱글 도트
         const dotCount = (fret === 12) ? 2 : 1;
@@ -114,7 +113,7 @@ export class VirtualFretboard {
             dot.style.width = '12px';
             dot.style.height = '12px';
             dot.style.borderRadius = '50%';
-            dot.style.backgroundColor = 'rgba(200, 200, 200, 0.6)'; // 은은한 회색
+            dot.style.backgroundColor = 'rgba(200, 200, 200, 0.6)';
             dot.style.boxShadow = '0 0 2px rgba(0,0,0,0.3)';
             markerContainer.appendChild(dot);
         }
@@ -126,26 +125,22 @@ export class VirtualFretboard {
         const numberRow = document.createElement('div');
         numberRow.className = 'string-row numbers';
 
-        // 0프렛 더미 공간
+        // 0프렛 더미
         const dummyNut = document.createElement('div');
         dummyNut.className = 'fret-cell open number-bg';
         dummyNut.style.flex = `0 0 ${this.getFretWidth(0)}px`;
         dummyNut.style.width = `${this.getFretWidth(0)}px`;
         numberRow.appendChild(dummyNut);
 
-        // 1~15프렛 숫자
+        // 1~22프렛 숫자
         for (let f = 1; f <= this.fretCount; f++) {
             const cell = document.createElement('div');
             cell.className = 'fret-cell number';
             cell.innerText = f;
 
-            // [수정] 너비 동기화
             const width = this.getFretWidth(f);
             cell.style.flex = `0 0 ${width}px`;
             cell.style.width = `${width}px`;
-
-            // [수정] 기존 색상 변경 로직 삭제 (인레이로 대체되었으므로)
-            // 기본 스타일 유지
 
             numberRow.appendChild(cell);
         }
