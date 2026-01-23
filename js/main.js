@@ -35,6 +35,8 @@ const vFretboard = new VirtualFretboard('virtual-fretboard', (note, string) => {
 // --- 1. 오디오 초기화 ---
 const btnInit = document.getElementById('btn-init');
 const overlay = document.getElementById('start-overlay');
+// [New] 마이크 없이 시작 버튼
+const btnNoMic = document.getElementById('btn-no-mic');
 
 if (btnInit) {
     btnInit.addEventListener('click', async () => {
@@ -47,6 +49,15 @@ if (btnInit) {
             console.error("Audio init failed:", err);
             btnInit.innerText = "오류 발생 (재시도)";
         }
+    });
+}
+if (btnNoMic) {
+    btnNoMic.addEventListener('click', () => {
+        if (overlay) overlay.style.display = 'none';
+        // 오디오 초기화 및 startLoop()를 호출하지 않음
+        // 게임 탭으로 자동 전환 등을 원하시면 아래 주석 해제
+        // switchTab('game');
+        console.log("Started without microphone input.");
     });
 }
 

@@ -21,6 +21,14 @@ export class FretboardGame {
         this.REQUIRED_HOLD_FRAMES = 10;
         this.VOLUME_THRESHOLD = 0.05;
 
+        // [New] 최고 점수 로드 (LocalStorage 사용)
+        // GitHub Pages와 같은 정적 호스팅에서도 브라우저 저장소를 통해 데이터 유지가 가능합니다.
+        try {
+            this.highScores = JSON.parse(localStorage.getItem('guitar-trainer-highscores')) || {};
+        } catch (e) {
+            this.highScores = {};
+        }
+
         // UI 요소
         this.ui = {
             modeSelect: document.getElementById('game-mode-select'),
@@ -31,7 +39,8 @@ export class FretboardGame {
             timerText: document.getElementById('timer-text'),
             score: document.getElementById('score'),
             msg: document.getElementById('feedback-msg'),
-            sustainBar: document.getElementById('sustain-bar')
+            sustainBar: document.getElementById('sustain-bar'),
+            // 모달 관련 요소는 createGameOverModal에서 동적으로 추가됩니다.
         };
 
         // [UI 초기화] 타이머 텍스트 스타일
@@ -51,11 +60,97 @@ export class FretboardGame {
             this.ui.timerBar.parentElement.style.overflow = 'visible';
         }
 
+        // [New] 게임 종료 모달 UI 생성 (HTML 의존성 제거를 위해 JS로 생성)
+        this.createGameOverModal();
+
         this.initEventListeners();
     }
 
+    // [New] 모달 UI 동적 생성
+    createGameOverModal() {
+        // 모달 컨테이너
+        const modal = document.createElement('div');
+        modal.id = 'custom-game-over-modal';
+        Object.assign(modal.style, {
+            display: 'none',
+            position: 'absolute',
+            top: '0', left: '0', width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            zIndex: '1000',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column',
+            color: 'white',
+            fontFamily: 'sans-serif',
+            backdropFilter: 'blur(4px)'
+        });
+
+        // 내용 박스
+        const content = document.createElement('div');
+        Object.assign(content.style, {
+            backgroundColor: '#2c3e50',
+            padding: '2.5rem',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '2px solid #3498db',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            minWidth: '320px',
+            maxWidth: '90%'
+        });
+
+        // 제목
+        const title = document.createElement('h2');
+        title.innerText = 'GAME OVER';
+        Object.assign(title.style, {
+            marginTop: '0', marginBottom: '1rem',
+            color: '#e74c3c', fontSize: '2rem', textTransform: 'uppercase'
+        });
+
+        // 메시지 (신기록 등)
+        const msg = document.createElement('h3');
+        Object.assign(msg.style, {
+            color: '#f1c40f', minHeight: '1.5em',
+            marginBottom: '1.5rem', fontSize: '1.4rem'
+        });
+
+        // 점수 정보
+        const scoreInfo = document.createElement('div');
+        scoreInfo.style.marginBottom = '2rem';
+
+        // 버튼
+        const btn = document.createElement('button');
+        btn.innerText = '확인';
+        Object.assign(btn.style, {
+            padding: '12px 40px', fontSize: '1.1rem',
+            backgroundColor: '#3498db', color: 'white',
+            border: 'none', borderRadius: '8px',
+            cursor: 'pointer', transition: 'background 0.2s'
+        });
+
+        btn.onmouseover = () => btn.style.backgroundColor = '#2980b9';
+        btn.onmouseout = () => btn.style.backgroundColor = '#3498db';
+        btn.onclick = () => {
+            modal.style.display = 'none';
+            this.stopGame();
+        };
+
+        content.append(title, msg, scoreInfo, btn);
+        modal.appendChild(content);
+
+        // 게임 영역에 모달 추가
+        const gameContainer = document.getElementById('fretboard-app') || document.body;
+        if (getComputedStyle(gameContainer).position === 'static') {
+            gameContainer.style.position = 'relative';
+        }
+        gameContainer.appendChild(modal);
+
+        // UI 참조 저장
+        this.ui.gameOverModal = modal;
+        this.ui.modalMsg = msg;
+        this.ui.modalScoreInfo = scoreInfo;
+    }
+
     initEventListeners() {
-        // [수정] 화살표 함수로 감싸서 this 바인딩 유지
         document.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', () => this.startGame(card.dataset.mode));
         });
@@ -69,21 +164,20 @@ export class FretboardGame {
         this.isPlaying = true;
         this.ui.score.innerText = 0;
 
+        // 게임 시작 시 모달 확실히 닫기
+        if (this.ui.gameOverModal) this.ui.gameOverModal.style.display = 'none';
+
         this.ui.modeSelect.classList.add('hidden');
         this.ui.playArea.classList.remove('hidden');
 
         this.startTime = Date.now();
 
-        // [중요 수정] 순서 변경!
-        // timeLimit을 먼저 설정한 뒤에 gameLoop를 돌려야 합니다.
-        // 그렇지 않으면 timeLimit이 0인 상태로 updateTimer가 실행되어 즉시 게임 오버됩니다.
-
         // 1. 모드별 시간 및 스타일 설정
         if (mode === 'timeAttack') {
-            this.timeLimit = 100 * 1000; // 100초
+            this.timeLimit = 100 * 1000;
             this.setTimerTextStyle(true);
         } else if (mode === 'infinity') {
-            this.timeLimit = 5 * 1000;   // 5초
+            this.timeLimit = 5 * 1000;
             this.setTimerTextStyle(true);
         } else {
             // Free 모드
@@ -97,7 +191,7 @@ export class FretboardGame {
         this.target = null;
         this.nextQuestion();
 
-        // 3. 게임 루프 시작 (설정이 다 끝난 후 실행)
+        // 3. 게임 루프 시작
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
         this.gameLoop();
     }
@@ -107,7 +201,6 @@ export class FretboardGame {
 
         if (isSmallMode) {
             this.ui.timerText.style.fontSize = '0.9rem';
-            this.ui.timerText.style.color = '#ccc';
             this.ui.timerText.style.fontWeight = '400';
         } else {
             this.ui.timerText.style.fontSize = '';
@@ -122,6 +215,9 @@ export class FretboardGame {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
         }
+        // 강제 종료 시 모달도 닫음
+        if (this.ui.gameOverModal) this.ui.gameOverModal.style.display = 'none';
+
         this.ui.playArea.classList.add('hidden');
         this.ui.modeSelect.classList.remove('hidden');
     }
@@ -200,15 +296,13 @@ export class FretboardGame {
 
     // --- 입력 처리 ---
 
-    // 1. 마이크 입력 (Pitch)
     update(frequency, volume) {
         if (!this.isPlaying) return;
 
         if (frequency && volume > this.VOLUME_THRESHOLD) {
             const detected = getNoteFromFreq(frequency);
-            const TOLERANCE = 40; // cents 허용 오차
+            const TOLERANCE = 40;
 
-            // [개선] 엄격한 리셋 완화 (노이즈로 인한 끊김 방지)
             if (detected.note === this.target.note && Math.abs(detected.cents) < TOLERANCE) {
                 if (this.holdingNote === detected.note) {
                     this.holdFrames++;
@@ -225,13 +319,10 @@ export class FretboardGame {
                     this.handleSuccess("Mic");
                 }
             } else {
-                // [개선] 틀린 음이 들어왔을 때 즉시 0으로 만들지 않고 천천히 감소 (Decay)
-                // 실수로 살짝 튀는 음에 대한 관대함 부여
                 if (this.holdFrames > 0) {
-                    this.holdFrames -= 2; // 조금 빠르게 감소
+                    this.holdFrames -= 2;
                     if (this.holdFrames < 0) this.holdFrames = 0;
 
-                    // 감소 중 시각적 피드백
                     const progress = (this.holdFrames / this.REQUIRED_HOLD_FRAMES) * 100;
                     this.ui.sustainBar.style.width = `${progress}%`;
                 } else {
@@ -239,9 +330,8 @@ export class FretboardGame {
                 }
             }
         } else {
-            // 소리가 안 날 때도 즉시 0보다는 천천히 감소 (Sustain 효과)
             if (this.holdFrames > 0) {
-                this.holdFrames -= 1; // 천천히 감소
+                this.holdFrames -= 1;
                 const progress = (this.holdFrames / this.REQUIRED_HOLD_FRAMES) * 100;
                 this.ui.sustainBar.style.width = `${progress}%`;
             } else {
@@ -250,8 +340,6 @@ export class FretboardGame {
         }
     }
 
-    // 2. 가상 프렛보드 클릭 입력
-    // [중요] this 바인딩 문제를 방지하기 위해 화살표 함수로 선언 권장
     handleVirtualClick = (note, stringNum) => {
         if (!this.isPlaying) return;
 
@@ -259,8 +347,20 @@ export class FretboardGame {
         if (note === this.target.note && Number(stringNum) === this.target.string) {
             this.handleSuccess("Click");
         } else {
-            this.ui.msg.innerText = "땡!";
-            this.ui.msg.className = "fail-anim";
+            // [수정] 애니메이션 리셋 로직 추가
+            // 연속으로 틀렸을 때도 애니메이션이 다시 재생되도록 함
+            const msgEl = this.ui.msg;
+            msgEl.innerText = "땡!";
+
+            // 1. 기존 클래스 제거
+            msgEl.classList.remove('fail-anim');
+
+            // 2. 강제 Reflow (브라우저가 변경사항을 인지하게 함)
+            void msgEl.offsetWidth;
+
+            // 3. 클래스 다시 추가
+            msgEl.classList.add('fail-anim');
+
             SoundManager.playFail();
         }
     }
@@ -287,9 +387,7 @@ export class FretboardGame {
             totalTime = 5 * 1000;
         }
 
-        // 시간 계산이 음수가 되는 것을 방지 (화면 표시용)
         const displayTime = Math.max(0, timeLeft);
-
         const percent = Math.max(0, (displayTime / totalTime) * 100);
         if (this.ui.timerBar) this.ui.timerBar.style.width = `${percent}%`;
 
@@ -304,7 +402,6 @@ export class FretboardGame {
 
         if (this.ui.timerText) this.ui.timerText.innerText = `남은 시간: ${timeStr}s`;
 
-        // [게임 오버 판정] 실제 시간이 0 이하여야 함
         if (timeLeft <= 0) {
             this.handleFail();
         }
@@ -313,7 +410,7 @@ export class FretboardGame {
     handleSuccess(source) {
         this.score += 1;
         this.ui.score.innerText = this.score;
-        this.ui.msg.innerText = `Nice! (${source})`;
+        this.ui.msg.innerText = `정답!`;
         this.ui.msg.className = "success-anim";
         if (this.ui.sustainBar) this.ui.sustainBar.style.backgroundColor = '#2ecc71';
 
@@ -321,13 +418,13 @@ export class FretboardGame {
 
         this.isPlaying = false;
 
-        // 정답 맞춘 후 잠시 대기
         setTimeout(() => {
             this.isPlaying = true;
             this.nextQuestion();
         }, 500);
     }
 
+    // [수정] 게임 종료 처리: Alert 대신 모달 호출 및 점수 저장
     handleFail() {
         if (this.mode === 'infinity' || this.mode === 'timeAttack') {
             this.isPlaying = false;
@@ -337,15 +434,43 @@ export class FretboardGame {
                 this.animationFrameId = null;
             }
 
-            this.ui.msg.innerText = "Time Over!";
+            this.ui.msg.innerText = "시간 종료!";
             this.ui.msg.className = "fail-anim";
 
             SoundManager.playGameOver();
 
+            // 점수 계산 및 저장 (LocalStorage)
+            const currentScore = this.score;
+            // 저장된 점수가 없으면 0으로 초기화
+            const previousBest = this.highScores[this.mode] || 0;
+            let isNewRecord = false;
+
+            if (currentScore > previousBest) {
+                this.highScores[this.mode] = currentScore;
+                localStorage.setItem('guitar-trainer-highscores', JSON.stringify(this.highScores));
+                isNewRecord = true;
+            }
+
+            // 잠시 후 모달 표시
             setTimeout(() => {
-                alert(`게임 종료! 최종 점수: ${this.score}`);
-                this.stopGame();
+                this.showGameOverModal(currentScore, isNewRecord ? currentScore : previousBest, isNewRecord);
             }, 500);
         }
+    }
+
+    // [New] 모달 표시 메서드
+    showGameOverModal(score, bestScore, isNewRecord) {
+        if (!this.ui.gameOverModal) return;
+
+        // 메시지 설정
+        this.ui.modalMsg.innerText = isNewRecord ? "🎉 New Record! 🎉" : "수고하셨습니다!";
+
+        // 점수 HTML 설정
+        this.ui.modalScoreInfo.innerHTML = `
+            <div style="margin: 10px 0;">최종 점수: <strong style="color:#fff; font-size:1.6rem;">${score}</strong></div>
+            <div style="color:#bdc3c7; font-size:1rem; margin-top: 5px;">최고 기록: ${bestScore}</div>
+        `;
+
+        this.ui.gameOverModal.style.display = 'flex';
     }
 }
