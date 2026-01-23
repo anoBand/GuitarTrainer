@@ -232,6 +232,22 @@ body {
   background: #4a4a4a;
 }
 
+/* [추가] .primary-btn 정의 (metro-btn-start 등) */
+.primary-btn {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px; /* 일반 버튼은 둥글기 약간 적게 */
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.primary-btn:hover {
+    filter: brightness(0.9);
+}
+
 .secondary-btn {
     padding: 10px 20px;
     background: var(--sec-btn-bg);
@@ -239,7 +255,7 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-top: 20px;
+    /* margin-top: 20px; */ /* 범용성을 위해 제거하고 필요한 곳에서 추가 */
     font-weight: bold;
     transition: background 0.2s, color 0.2s;
 }
@@ -601,4 +617,142 @@ dialog.modal::backdrop {
 }
 .fret-cell:hover:not(.number) {
     background-color: rgba(128, 128, 128, 0.2);
+}
+
+/* =========================================
+   8. 메트로놈 (Metronome) [New]
+   ========================================= */
+#metronome-app {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* 메트로놈 전용 카드 스타일 (기존 .card 오버라이드 및 확장) */
+#metronome-app .card {
+    width: 100%;
+    max-width: 700px; /* [PC 최적화] 폭을 500px -> 700px로 확장 */
+    cursor: default;  /* 커서 기본 */
+    padding: 40px;
+
+    /* 기존 .card의 호버 효과 무력화 (메트로놈은 컨트롤 패널이므로 고정) */
+    transform: none !important;
+    background: var(--panel-color) !important;
+    border-color: transparent !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+
+    /* 내부 정렬 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 호버 시에도 배경색 변경 방지 */
+#metronome-app .card:hover {
+    background: var(--panel-color);
+}
+
+.bpm-display-container {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* [수정] BPM Display Input Styling - 텍스트처럼 보이게 */
+#metro-bpm-display {
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    background: transparent;
+    border: none;
+    text-align: center;
+    width: 160px; /* 숫자가 커서 넓이 확보 */
+    font-family: inherit;
+    -moz-appearance: textfield; /* Firefox 스피너 제거 */
+}
+/* Webkit 스피너 제거 */
+#metro-bpm-display::-webkit-outer-spin-button,
+#metro-bpm-display::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#metro-bpm-display:focus {
+    outline: none;
+    border-bottom: 2px solid var(--accent-color); /* 포커스 시 밑줄로 입력 가능 표시 */
+}
+
+.metro-visuals {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 30px 0;
+}
+
+.metro-beat-indicator {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: var(--ui-bg-dark); /* 변수 사용 */
+    transition: background 0.1s, transform 0.1s;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.metro-beat-indicator.active {
+    background: var(--accent-color);
+    transform: scale(1.2);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+.metro-beat-indicator.accent {
+    background: #e74c3c; /* 강박 (빨간색) */
+    box-shadow: 0 0 15px #e74c3c;
+}
+
+.metro-controls {
+    width: 100%;
+    max-width: 500px; /* 내부 컨트롤은 너무 퍼지지 않게 제한 */
+    margin: 0 auto;
+}
+
+/* 슬라이더 공통 스타일 */
+#metro-bpm-slider, #metro-volume {
+    width: 100%;
+    margin: 20px 0;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+
+.metro-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.metro-buttons button {
+    margin: 0; /* 기존 secondary-btn의 상단 마진 제거 */
+    min-width: 50px;
+}
+
+/* #metro-bpm-input 스타일 삭제됨 (통합됨) */
+
+.metro-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.metro-volume-container {
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    width: 100%;
 }

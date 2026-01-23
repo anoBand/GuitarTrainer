@@ -12,6 +12,7 @@
         <div class="nav-switch">
             <button id="nav-tuner">튜너</button>
             <button id="nav-fretboard" class="active">프렛보드</button> 
+            <button id="nav-metronome">메트로놈</button>
         </div>
         <div class="nav-controls">
             <div class="volume-control" title="효과음 볼륨">
@@ -49,6 +50,7 @@
     </div>
 
     <div class="main-container">
+        <!-- 튜너 섹션 -->
         <section id="tuner-app" class="app-section hidden">
             <div class="tuner-display">
                 <div id="tuner-note">--</div>
@@ -61,6 +63,7 @@
             </div>
         </section>
 
+        <!-- 프렛보드 게임 섹션 -->
         <section id="fretboard-app" class="app-section">
             <div id="game-mode-select" class="mode-selector">
                 <h3>모드 선택</h3>
@@ -93,6 +96,53 @@
 
                 <div class="controls">
                     <button id="btn-stop-game" class="secondary-btn">나가기</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 메트로놈 섹션 -->
+        <section id="metronome-app" class="app-section hidden">
+            <div class="card">
+                <h2>Metronome</h2>
+
+                <!-- BPM Display (Input으로 변경됨) -->
+                <div class="bpm-display-container">
+                    <input type="number" id="metro-bpm-display" value="120" min="20" max="300">
+                    <span style="font-size: 1.5rem; color: #7f8c8d;">BPM</span>
+                </div>
+
+                <!-- Visual Beats -->
+                <div class="metro-visuals">
+                    <div class="metro-beat-indicator"></div>
+                    <div class="metro-beat-indicator"></div>
+                    <div class="metro-beat-indicator"></div>
+                    <div class="metro-beat-indicator"></div>
+                </div>
+
+                <!-- BPM Controls -->
+                <div class="metro-controls">
+                    <input type="range" id="metro-bpm-slider" min="20" max="300" value="120">
+
+                    <!-- 버튼 변경: -10, -5, +5, +10 -->
+                    <div class="metro-buttons">
+                        <button id="metro-btn-m10" class="secondary-btn">-10</button>
+                        <button id="metro-btn-m5" class="secondary-btn">-5</button>
+                        <!-- 중앙 입력창 제거됨 -->
+                        <button id="metro-btn-p5" class="secondary-btn">+5</button>
+                        <button id="metro-btn-p10" class="secondary-btn">+10</button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="metro-actions">
+                    <button id="metro-btn-start" class="primary-btn" style="width: 120px;">START</button>
+                    <button id="metro-btn-tap" class="secondary-btn" style="width: 80px;">TAP</button>
+                </div>
+
+                <!-- Volume -->
+                <div class="metro-volume-container">
+                    <label>Metronome Vol</label>
+                    <input type="range" id="metro-volume" min="0" max="100" value="50">
                 </div>
             </div>
         </section>

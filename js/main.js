@@ -1,41 +1,41 @@
-//main.js
+// js/main.js
 import { startAudio, getPitch, getAudioDevices } from './core/pitch.js';
 import { TunerApp } from './tuner/tunerApp.js';
 import { FretboardGame } from './fretboard/game.js';
 import { VirtualFretboard } from './fretboard/virtualFretboard.js';
 import { SoundManager } from './core/sound.js';
+import { Metronome } from './metronome/metronome.js';
 
 const tuner = new TunerApp();
 const game = new FretboardGame();
+const metronome = new Metronome();
 
-// [수정] 초기 모드 설정을 DOM 상태와 동기화
 const secTuner = document.getElementById('tuner-app');
-let currentMode = (secTuner && !secTuner.classList.contains('hidden')) ? 'tuner' : 'game';
+const secGame = document.getElementById('fretboard-app');
+const secMetronome = document.getElementById('metronome-app');
+
+// [초기화] 현재 활성화된 탭 감지
+let currentMode = 'tuner'; // 기본값
+if (secTuner && !secTuner.classList.contains('hidden')) currentMode = 'tuner';
+else if (secGame && !secGame.classList.contains('hidden')) currentMode = 'game';
+else if (secMetronome && !secMetronome.classList.contains('hidden')) currentMode = 'metronome';
 
 let animationFrameId = null;
 let isLoopRunning = false;
 
-// [수정] 가상 프렛보드 초기화 (디버깅 로그 및 안전장치 추가)
+// [가상 프렛보드]
 const vFretboard = new VirtualFretboard('virtual-fretboard', (note, string) => {
-    console.log(`[Main] Click received: ${note} on String ${string}`); // 클릭 확인용 로그
-
-    // 조건 완화: 현재 모드가 게임이거나, 게임이 실행 중(isPlaying)이라면 입력 허용
+    // [최적화] 게임 모드일 때만 클릭 이벤트 전달
     if (currentMode === 'game' || game.isPlaying) {
-        // [중요] game 인스턴스가 초기화되었는지 확인
         if (game && typeof game.handleVirtualClick === 'function') {
             game.handleVirtualClick(note, string);
-        } else {
-            console.error("Game instance or handleVirtualClick is missing!");
         }
-    } else {
-        console.warn(`Click ignored. CurrentMode: ${currentMode}, GamePlaying: ${game.isPlaying}`);
     }
 });
 
 // --- 1. 오디오 초기화 ---
 const btnInit = document.getElementById('btn-init');
 const overlay = document.getElementById('start-overlay');
-// [New] 마이크 없이 시작 버튼
 const btnNoMic = document.getElementById('btn-no-mic');
 
 if (btnInit) {
@@ -51,18 +51,18 @@ if (btnInit) {
         }
     });
 }
+
 if (btnNoMic) {
     btnNoMic.addEventListener('click', () => {
         if (overlay) overlay.style.display = 'none';
-        // 오디오 초기화 및 startLoop()를 호출하지 않음
-        // 게임 탭으로 자동 전환 등을 원하시면 아래 주석 해제
-        // switchTab('game');
         console.log("Started without microphone input.");
+        // 마이크 없이 시작 시 튜너/게임 루프는 돌리지 않음 (메트로놈은 독립적)
+        // 만약 메트로놈 탭이 기본이라면 여기서 UI 처리가 필요할 수 있음
     });
 }
 
 /* =========================================
-   테마 변경 로직
+   테마 및 볼륨 설정
    ========================================= */
 const btnTheme = document.getElementById('btn-theme');
 const savedTheme = localStorage.getItem('theme');
@@ -87,16 +87,14 @@ if (btnTheme) {
     });
 }
 
-// 볼륨 슬라이더
 const volSlider = document.getElementById('volume-slider');
 if (volSlider) {
     volSlider.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        SoundManager.setVolume(val);
+        SoundManager.setVolume(parseFloat(e.target.value));
     });
 }
 
-// --- 2. ⚙️ 설정 모달 로직 ---
+// ... (설정 모달 로직) ...
 const btnSettings = document.getElementById('btn-settings');
 const modal = document.getElementById('settings-modal');
 const modalSelect = document.getElementById('modal-audio-source');
@@ -130,35 +128,54 @@ if (btnSave && modal) {
         modal.close();
     });
 }
-
 if (btnClose && modal) btnClose.addEventListener('click', () => modal.close());
 
 
-// --- 3. 탭 전환 ---
+// --- 3. 탭 전환 (메트로놈 추가) ---
 const navTuner = document.getElementById('nav-tuner');
 const navGame = document.getElementById('nav-fretboard');
-const secGame = document.getElementById('fretboard-app');
+const navMetronome = document.getElementById('nav-metronome');
 
-if (navTuner && navGame) {
-    navTuner.addEventListener('click', () => switchTab('tuner'));
-    navGame.addEventListener('click', () => switchTab('game'));
-}
+if (navTuner) navTuner.addEventListener('click', () => switchTab('tuner'));
+if (navGame) navGame.addEventListener('click', () => switchTab('game'));
+if (navMetronome) navMetronome.addEventListener('click', () => switchTab('metronome'));
 
 function switchTab(mode) {
-    currentMode = mode;
-    console.log(`Tab switched to: ${mode}`); // 탭 전환 확인 로그
+    if (currentMode === mode) return;
 
-    if (mode === 'tuner') {
-        navTuner.classList.add('active');
-        navGame.classList.remove('active');
-        if (secTuner) secTuner.classList.remove('hidden');
-        if (secGame) secGame.classList.add('hidden');
-        if (game) game.stopGame();
-    } else {
-        navGame.classList.add('active');
-        navTuner.classList.remove('active');
-        if (secGame) secGame.classList.remove('hidden');
-        if (secTuner) secTuner.classList.add('hidden');
+    console.log(`Switching Tab: ${currentMode} -> ${mode}`);
+
+    // 1. [Cleanup] 기존 모드 정리
+    if (currentMode === 'game') {
+        game.stopGame();
+    }
+    else if (currentMode === 'metronome') {
+        metronome.stop(); // 메트로놈 소리 끄기
+    }
+
+    // 2. [UI Reset] 모든 탭 숨기기
+    [secTuner, secGame, secMetronome].forEach(el => el && el.classList.add('hidden'));
+    [navTuner, navGame, navMetronome].forEach(el => el && el.classList.remove('active'));
+
+    // 3. [Activate] 선택된 모드 활성화
+    currentMode = mode;
+
+    switch (mode) {
+        case 'tuner':
+            if (secTuner) secTuner.classList.remove('hidden');
+            if (navTuner) navTuner.classList.add('active');
+            break;
+
+        case 'game':
+            if (secGame) secGame.classList.remove('hidden');
+            if (navGame) navGame.classList.add('active');
+            break;
+
+        case 'metronome':
+            if (secMetronome) secMetronome.classList.remove('hidden');
+            if (navMetronome) navMetronome.classList.add('active');
+            // 메트로놈은 자동 시작하지 않고 사용자가 Start 버튼을 누르게 둠
+            break;
     }
 }
 
@@ -166,11 +183,17 @@ function switchTab(mode) {
 function loop() {
     if (!isLoopRunning) return;
 
+    // [최적화] 메트로놈 모드일 때는 Pitch Detection 중단
+    if (currentMode === 'metronome') {
+        // 메트로놈은 내부 타이머로 동작하므로 여기선 패스
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+    }
+
     getPitch((frequency, volume) => {
         if (currentMode === 'tuner') {
             tuner.update(frequency);
-        } else {
-            // 게임 모드일 때만 게임 업데이트
+        } else if (currentMode === 'game') {
             game.update(frequency, volume);
         }
     });
@@ -194,10 +217,11 @@ function stopLoop() {
     console.log("Main Loop Stopped");
 }
 
-// 백그라운드 처리 (visibilitychange)
 document.addEventListener("visibilitychange", async () => {
     if (document.hidden) {
         stopLoop();
+        // 백그라운드 전환 시 메트로놈 정지 (선택 사항)
+        if (currentMode === 'metronome') metronome.stop();
     } else {
         if (SoundManager.audioContext && SoundManager.audioContext.state === 'suspended') {
             await SoundManager.audioContext.resume();
