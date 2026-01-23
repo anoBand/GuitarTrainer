@@ -13,7 +13,6 @@ export class VirtualFretboard {
             return;
         }
 
-        // [안전장치] NOTES가 로드되지 않았을 경우 대비
         if (!NOTES || NOTES.length === 0) {
             console.error("NOTES data is missing from utils.js");
         }
@@ -56,7 +55,6 @@ export class VirtualFretboard {
         const cell = document.createElement('div');
         cell.className = `fret-cell ${isOpen ? 'open' : ''}`;
 
-        // 데이터셋 설정 (CSS 디버깅 등 활용 가능)
         cell.dataset.note = note;
         cell.dataset.string = stringNum;
 
@@ -76,16 +74,12 @@ export class VirtualFretboard {
 
         // [클릭 이벤트 처리]
         cell.addEventListener('click', (e) => {
-            // 1. 시각적 피드백 (눌리는 효과)
             cell.classList.add('clicked');
             setTimeout(() => cell.classList.remove('clicked'), 150);
 
-            // 2. 디버깅 로그 (화면에서 클릭이 먹히는지 확인)
-            console.log(`[VF] Cell clicked: ${note} (String: ${stringNum})`);
-
-            // 3. 콜백 호출
+            // [수정] fret 정보도 함께 전달
             if (this.onNoteClick) {
-                this.onNoteClick(note, stringNum);
+                this.onNoteClick(note, stringNum, fret);
             }
         });
 

@@ -742,7 +742,6 @@ dialog.modal::backdrop {
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-top: 20px;
     width: 100%;
 }
 
@@ -755,4 +754,9 @@ dialog.modal::backdrop {
     padding-top: 20px;
     border-top: 1px solid var(--border-color);
     width: 100%;
+}
+
+/* [New] Game Controls Margin */
+.controls {
+    margin-top: 40px;
 }
