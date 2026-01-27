@@ -1,0 +1,13 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  guitar-trainer:
+    build: .
+    container_name: guitar-trainer
+    # 호스트의 8080 포트를 컨테이너의 80 포트와 연결합니다.
+    # 나중에 Nginx 리버스 프록시에서 8080 포트로 신호를 보내주면 됩니다.
+    ports:
+      - "8080:80"
+    restart: always
