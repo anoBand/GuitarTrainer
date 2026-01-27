@@ -235,4 +235,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-!/GEMINI.md
+GEMINI.md

@@ -1,0 +1,14 @@
+# Ignore git repository files
+.git/
+.gitignore
+
+# Ignore IDE and editor files
+.idea/
+*.iml
+
+# Ignore Docker-related files
+Dockerfile
+.dockerignore
+
+# Ignore documentation
+GEMINI.md
