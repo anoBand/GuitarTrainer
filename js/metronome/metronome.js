@@ -22,10 +22,10 @@ export class Metronome {
             startBtn: document.getElementById('metro-btn-start'),
             bpmDisplay: document.getElementById('metro-bpm-display'),
             bpmSlider: document.getElementById('metro-bpm-slider'),
-            minus10: document.getElementById('metro-btn-m10'),
             minus5: document.getElementById('metro-btn-m5'),
+            minus1: document.getElementById('metro-btn-m1'),
+            plus1: document.getElementById('metro-btn-p1'),
             plus5: document.getElementById('metro-btn-p5'),
-            plus10: document.getElementById('metro-btn-p10'),
             tapBtn: document.getElementById('metro-btn-tap'),
             visuals: document.querySelectorAll('.metro-beat-indicator'),
             volumeSlider: document.getElementById('metro-volume'),
@@ -61,10 +61,10 @@ export class Metronome {
             });
         }
 
-        if (this.ui.minus10) this.ui.minus10.addEventListener('click', () => this.changeBpm(-10));
         if (this.ui.minus5) this.ui.minus5.addEventListener('click', () => this.changeBpm(-5));
+        if (this.ui.minus1) this.ui.minus1.addEventListener('click', () => this.changeBpm(-1));
+        if (this.ui.plus1) this.ui.plus1.addEventListener('click', () => this.changeBpm(1));
         if (this.ui.plus5) this.ui.plus5.addEventListener('click', () => this.changeBpm(5));
-        if (this.ui.plus10) this.ui.plus10.addEventListener('click', () => this.changeBpm(10));
 
         this.ui.tapBtn.addEventListener('click', () => this.handleTap());
     }
